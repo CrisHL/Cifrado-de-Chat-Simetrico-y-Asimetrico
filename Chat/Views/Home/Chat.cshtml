@@ -1,0 +1,79 @@
+﻿@{
+    ViewBag.Title = "Chat";
+}
+
+<div style="display: flex;">
+    <div style="width: 50%; padding: 5px">
+        <h3>Chat Cifrado</h3>
+        <div id="chat-box" style="border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: auto;">
+            <ul id="discussion" style="list-style-type: none; padding: 0;"></ul>
+        </div>
+        <input type="text" id="name" placeholder="Tu nombre" style="margin-top: 10px; width: 100%;" />
+        <input type="text" id="message" placeholder="Escribe tu mensaje" style="margin-top: 10px; width: 100%;" />
+        <input type="button" id="sendmessage" value="Enviar mensaje" style="margin-top: 10px; width: 100%;" />
+        <input type="radio" id="symmetric" name="encryption" value="symmetric" /> Simétrico
+        <input type="radio" id="asymmetric" name="encryption" value="asymmetric" /> Asimétrico
+    </div>
+    <div style="width: 50%; padding: 5px">
+        <h3>Chat Descifrado</h3>
+        <div id="encrypted-chat">
+            <div id="chat-box" style="border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: auto;">
+                <ul id="discussion2" style="list-style-type: none; padding: 0;"></ul>
+                </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    ul li {
+        margin: 5px 0;
+    }
+
+    .symmetric-message {
+        background-color: #e0f7fa;
+        padding: 5px;
+        border-radius: 5px;
+    }
+
+    .asymmetric-message {
+        background-color: #ffecb3;
+        padding: 5px;
+        border-radius: 5px;
+    }
+</style>
+
+@section scripts {
+    <script src="~/Scripts/jquery.signalR-2.4.3.min.js"></script>
+    <script src="~/signalr/hubs"></script>
+    <script>
+        var chat = $.connection.chatHub;
+
+        chat.client.broadcastMessage = function (name, encryptedMessage, message, symmetric) {
+            var messageId = 'message-' + Date.now();
+            if (symmetric) {
+                $('#discussion').append('<li><strong>' + name + '</strong>: <span id="' + messageId + '" class="symmetric-message">' + encryptedMessage + '</li>');
+                $('#discussion2').append('<li><strong>' + name + '</strong>: <span id="' + messageId + '" class="symmetric-message">' + message + '</li>');
+            } else {
+                $('#discussion').append('<li><strong>' + name + '</strong>: <span id="' + messageId + '" class="asymmetric-message">' + encryptedMessage + '</li>');
+                $('#discussion2').append('<li><strong>' + name + '</strong>: <span id="' + messageId + '" class="symmetric-message">' + message + '</li>');
+            }
+        };
+
+
+        $.connection.hub.start().done(function () {
+            $('#sendmessage').click(function () {
+                var name = $('#name').val();
+                var message = $('#message').val();
+                var symmetric = $('input[name="encryption"]:checked').val() === "symmetric";
+
+                if (symmetric) {
+                    chat.server.send(name, message, symmetric);
+                } else {
+                    chat.server.send(name, message, symmetric);
+                }
+
+                $('#message').val('');
+            });
+        });
+    </script>
+}
